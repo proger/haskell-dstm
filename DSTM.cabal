@@ -1,10 +1,10 @@
 Name: DSTM
-Version: 0.1.2
+Version: 0.2
 Copyright: (c) 2010, Frank Kupke
 License: LGPL
 License-File: LICENSE
 Author: Frank Kupke
-Maintainer: frk@informatik.uni-kiel.de
+Maintainer: frk@informatik.uni-kiel.de, proger@hackndev.com
 Cabal-Version: >= 1.2.3
 Stability: provisional
 Synopsis: A framework for using STM within distributed systems
@@ -17,9 +17,9 @@ used for distributed Haskell applications as well. Provided are a simple Dining
 Philosophers, a Chat, and a soft real-time Bomberman game application.
 .
 Distributed communication is transparent to the application programmer. The
-application designer uses a very simple nameserver mechanism to set up the 
+application designer uses a very simple nameserver mechanism to set up the
 system. The DSTM library includes the management of unavailable process nodes
-and provides the application with abstract error information thus facilitating 
+and provides the application with abstract error information thus facilitating
 the implementation of robust distributed application programs.
 .
 For usage please look into the included file: DSTMManual.pdf, also available at
@@ -35,11 +35,11 @@ Changes from last version:
 }
 Category: Distributed Computing
 Build-Type: Simple
-Tested-With: GHC ==6.10
+Tested-With: GHC ==7.8.4
 
 Data-Files: field.txt, input1.txt, input2.txt, input3.txt
 Data-Dir: Bomberman
-Extra-source-files: README LICENSE DSTMManual.pdf
+Extra-source-files: README.md LICENSE DSTMManual.pdf
 
 Library
   Build-Depends: base >=4 && <5, unix, process, network, containers
