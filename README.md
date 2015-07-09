@@ -9,5 +9,5 @@ This is a fork of [DSTM](https://hackage.haskell.org/package/DSTM-0.1.2) library
 
 ## User's Manual
 
-Please see DSTMManual.pdf in the DSTM directory.
+Please see [DSTMManual.pdf](DSTMManual.pdf).
 
