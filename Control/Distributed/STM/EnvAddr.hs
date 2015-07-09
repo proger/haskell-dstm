@@ -166,7 +166,7 @@ lookupTCPRecEnv h = do
 lookupRecEnv :: Handle -> [TCPRecConn] -> Maybe EnvAddr
 lookupRecEnv _ []                = Nothing
 lookupRecEnv key ((_, []):conns) = lookupRecEnv key conns
-lookupRecEnv key ((env, (h:hs)):conns) 
+lookupRecEnv key ((env, (h:hs)):conns)
                       | key == h  = Just env
                       | otherwise = lookupRecEnv key ((env, hs):conns)
 
@@ -243,7 +243,7 @@ data TCPStat = TCPStat {
 
 gTCPStat :: MVar TCPStat
 {-# NOINLINE gTCPStat #-}
-gTCPStat = unsafePerformIO (newMVar (TCPStat{conEnv      = 0, 
+gTCPStat = unsafePerformIO (newMVar (TCPStat{conEnv      = 0,
                                              conExclEnv  = 0,
                                              conRetryVar = 0,
                                              conNS       = 0}))
@@ -276,7 +276,7 @@ printTCPStat s = do
   msgs <- readMVar gSTMMsgStat
   printStat s ips sndConns recConns msgs
 
-printStat :: String -> TCPStat -> [TCPSndConn] -> [TCPRecConn] -> [STMMsgStat] 
+printStat :: String -> TCPStat -> [TCPSndConn] -> [TCPRecConn] -> [STMMsgStat]
              -> IO ()
 printStat s ips sndConns recConns msgs = do
   let l = foldr (+) 1 (map (length.snd) recConns)
@@ -309,8 +309,8 @@ printMsg (msg, count) = putStrLn (show msg ++ ": " ++ showJustify count 5)
 -- by the DSTM library when either 'readTVar' or 'writeTVar' is called on an
 -- unreachable TVar.
 -- A TVar becomes unreachable when the process hosting the TVar becomes
--- unreachable. 
--- An atomic transaction using a TVar which becomes unreachable during the 
+-- unreachable.
+-- An atomic transaction using a TVar which becomes unreachable during the
 -- execution of 'atomic' may either execute completely (without the unreachable
 -- TVar(s)) or execute not at all depending on transaction states. In either
 -- case an exception of type 'SomeDistTVarException' is raised.
@@ -322,7 +322,7 @@ data SomeDistTVarException = PropagateDistTVarFail String SomeDistTVarException
 instance Exception SomeDistTVarException
 
 instance Show SomeDistTVarException where
-  show (PropagateDistTVarFail loc ex) = 
+  show (PropagateDistTVarFail loc ex) =
     "PropagateDistTVarFail " ++ loc ++ "\n" ++ show ex
   show (CommunicationFail loc env ex)  = formEx "CommunicationFail" loc env ex
   show (NodeConnectionFail loc env ex) = formEx "NodeConnectionFail" loc env ex
@@ -353,7 +353,7 @@ gSendLock  = unsafePerformIO (newMVar ())
 sendTCP :: Show a => a -> Handle -> IO ()
 sendTCP msg h = catch (do
   takeMVar gSendLock
-  hPutStrLn h (show msg) 
+  hPutStrLn h (show msg)
   hFlush h
   putMVar gSendLock ()
   )(\e -> do
@@ -363,9 +363,9 @@ sendTCP msg h = catch (do
     throw (CommunicationFail ("sendTCP: " ++ show msg ++ show h) env e))
 
 recvTCP :: Show a => a -> Handle -> IO String
-recvTCP msg h = catch (do 
-  hPutStrLn h (show msg) 
-  hFlush h 
+recvTCP msg h = catch (do
+  hPutStrLn h (show msg)
+  hFlush h
   hGetLine h
   )(\e -> do
     debugStrLn1 $ "recvTCP " ++ show e

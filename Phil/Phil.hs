@@ -13,7 +13,7 @@ eatings = 200
 takeStick :: Stick -> Int -> STM ()
 takeStick s n = do
   b <- readTVar s
-  if b 
+  if b
     then writeTVar s False
     else retry
 
@@ -46,7 +46,7 @@ startPhils n = do
   ioSticks <- atomically $ do
     sticks <- mapM (const (newTVar True)) [1..n]
     return sticks
-  mapM_ (\(l,r,i)->forkIO (phil eatings sync i l r)) 
+  mapM_ (\(l,r,i)->forkIO (phil eatings sync i l r))
         (zip3 ioSticks (tail ioSticks) [1..n-1])
   forkIO (phil eatings sync n (last ioSticks) (head ioSticks))
   takeMVar sync
@@ -55,7 +55,7 @@ startPhils n = do
   takeMVar sync
   takeMVar sync-}
 
-              
+
 main :: IO ()
 --main = startPhils 5
 main = do

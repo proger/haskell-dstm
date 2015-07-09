@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 
 module Control.Distributed.STM.DSTM (TVar, STM, newTVar, readTVar, writeTVar,
-             atomic, retry, orElse, throw, catch, 
+             atomic, retry, orElse, throw, catch,
              module Control.Distributed.STM.Dist,
              module Control.Distributed.STM.NameService,
              startDist, SomeDistTVarException, isDistErrTVar) where
@@ -37,7 +37,7 @@ infixl 2 `orElse`
 
 gInitVersionID :: ID
 gInitVersionID = 1
- 
+
 -- | Create a new TVar holding a value supplied
 newTVar   :: Dist a => a -> STM (TVar a)
 newTVar v = STM (\stmState -> do
@@ -51,7 +51,7 @@ newTVar v = STM (\stmState -> do
 --  waitQ   <- newDebugMVar ("WaitQ: TVar "++show newID) []
   let tVar = (TVar newRef newID newLock waitQ)
   return (Success stmState tVar))
- 
+
 -- |Return the current value stored in a TVar
 readTVar  :: Dist a => TVar a -> STM a
 readTVar tVar = STM (\stmState -> do
@@ -81,11 +81,11 @@ readIntraTransTVar  tVar commitLog =
 coreReadTVar  :: Dist a => TVar a -> IO (a,VersionID)
 coreReadTVar (TVar tVarRef _ lock _) = do
   takeMVar lock -- read lock to prevent read before finishing remote commit
-  v <- readMVar tVarRef 
+  v <- readMVar tVarRef
   putMVar lock ()
   debugStrLn8 ("coreReadTVar Loc "++show v)
   return v
-coreReadTVar (LinkTVar (VarLink tEnv tVarId)) = CE.catch (do   
+coreReadTVar (LinkTVar (VarLink tEnv tVarId)) = CE.catch (do
   answer <- remGetMsg tEnv (RemReadTVar tVarId gMyEnv)
   let vv@(v,_) = read answer
   finTVars v
@@ -114,7 +114,7 @@ readHost (LinkTVar (VarLink _ tId)) commit = do
 
 -- |Write the supplied value into a TVar
 writeTVar :: Dist a => TVar a -> a -> STM ()
-writeTVar tVar v = STM (\stmState -> 
+writeTVar tVar v = STM (\stmState ->
   let newState = stmState{
     stmValid  = bundledValidLogs tVar Nothing (stmValid stmState),
     stmCommit = bundledCommitLogs tVar v (stmCommit stmState)
@@ -135,7 +135,7 @@ atomic stmAction = do
   stmResult <- runSTM stmAction iState
   debugStrLn7 ("M")
   case stmResult of
-    Exception newState e -> do 
+    Exception newState e -> do
       debugStrLn7 ("E")
       let gState = gatherStmState newState
       valid <- startTrans gState
@@ -192,7 +192,7 @@ initialState = do
 	            stmValid    = [],
                     stmCommit   = []})
 
--- |Retry execution of the current memory transaction because it has seen 
+-- |Retry execution of the current memory transaction because it has seen
 -- values in TVars which mean that it should not continue (e.g. the TVars
 -- represent a shared buffer that is now empty). The implementation may block
 -- the thread until one of the TVars that it has read from has been udpated.
@@ -236,7 +236,7 @@ catch (STM stm) eHandler = STM (\stmState -> do
 
 -- copy WriteVals from CommitVals to ValidVals at end of transaction because of
 -- possible nested orElse-scopes where locks and validations are preserved
--- while commits are reset using simple push/pop in orElse stack 
+-- while commits are reset using simple push/pop in orElse stack
 -- finally all info is needed in ValidVals to be transmitted to all trans
 -- to ensure proper recovery in 3-phase model
 
@@ -270,7 +270,7 @@ robustFoldValidAct transId envs isValid (vLog:vLogs) = CE.catch (do
   )(\(e::SomeDistTVarException) -> do
     debugStrLn1 (">>> robustFoldValidAct -> error: " ++ show e)
     debugStrLn1 (">>> robustFoldValidAct dyn: "++ show (distTVarExEnv e))
-    CE.catch (doEndAction transId vLog) 
+    CE.catch (doEndAction transId vLog)
              (\(_::SomeDistTVarException) -> return ())
     propagateEx "robustFoldValidAct _" e
    )
@@ -349,7 +349,7 @@ gDistTransCont :: MVar [DistTransCont]
 {-# NOINLINE gDistTransCont #-}
 gDistTransCont = unsafePerformIO (newMVar [])
 
-startRemTrans :: TransID -> [ValidRemVal] -> 
+startRemTrans :: TransID -> [ValidRemVal] ->
                  [EnvAddr] -> (Bool -> IO ()) -> IO ()
 startRemTrans transId idVRVars transEnvs notifyCaller = do
   updateAutoTrans (+1) transId
@@ -372,7 +372,7 @@ contRemTrans transId msg = do
     Nothing  -> -- return () -- no error, possible duplicate recovery msgs
       debugStrLn8 ("<<<   contRemTrans N RemCont=   "++show msg)
 
-ctrlTrans :: Chan RemCont -> TransID -> [ValidRemVal] -> 
+ctrlTrans :: Chan RemCont -> TransID -> [ValidRemVal] ->
              [EnvAddr] -> (Bool -> IO ()) -> IO ()
 ctrlTrans msgChan transId idVRVars transEnvs notifyCaller = do
   -- start remote transaction (phase 1)
@@ -381,14 +381,14 @@ ctrlTrans msgChan transId idVRVars transEnvs notifyCaller = do
   mapM_ (lockTVarFromId.fst) idVRVars
   debugStrLn8 ("###   ctrlTrans locked transId=   "++show transId)
   isValid <- foldr validateValidIds (return True) idVRVars
-  CE.catch (notifyCaller isValid) 
+  CE.catch (notifyCaller isValid)
            (\(e::SomeException) -> do
              debugStrLn1 $ "<<<   ctrlTransFromIds !!! catch=   " ++ show e
              writeChan msgChan Err
            )
   ctrlContTrans msgChan transId idVRVars transEnvs
 
-ctrlContTrans :: Chan RemCont -> TransID -> [ValidRemVal] -> 
+ctrlContTrans :: Chan RemCont -> TransID -> [ValidRemVal] ->
                  [EnvAddr] -> IO ()
 ctrlContTrans msgChan transId idVRVars transEnvs = do
   -- continue remote transaction (phase 2)
@@ -400,7 +400,7 @@ ctrlContTrans msgChan transId idVRVars transEnvs = do
       debugStrLn8 ("<<<   ctrlContTrans: Com transId =   "++show transId)
       mapM_ contWriteTVar idVRVars
       mapM_ (notifyFromId.fst) idVRVars
-      ctrlEndTrans msgChan transId Com idVRVars transEnvs 
+      ctrlEndTrans msgChan transId Com idVRVars transEnvs
     Ret -> do -- decision for Ret
       debugStrLn8 ("<<<   ctrlContTrans: Ret transId =   "++show transId)
       mapM_ contExtWaitQ idVRVars
@@ -413,7 +413,7 @@ ctrlContTrans msgChan transId idVRVars transEnvs = do
       electNewTransCoordinator transId transEnvs End
       ctrlContTrans msgChan transId idVRVars transEnvs
 
-ctrlEndTrans :: Chan RemCont -> TransID -> RemCont -> 
+ctrlEndTrans :: Chan RemCont -> TransID -> RemCont ->
                 [ValidRemVal] -> [EnvAddr] -> IO ()
 ctrlEndTrans msgChan transId remCont idVRVars transEnvs = do
   -- finish remote transaction (phase 3)
@@ -432,7 +432,7 @@ ctrlEndTrans msgChan transId remCont idVRVars transEnvs = do
       ctrlEndTrans msgChan transId remCont idVRVars transEnvs
       debugStrLn8 ("###   ctrlEndTrans  ok")
     m -> if m == remCont -- no error, possible duplicate recovery msgs
-           then ctrlEndTrans msgChan transId m idVRVars transEnvs 
+           then ctrlEndTrans msgChan transId m idVRVars transEnvs
            else error "error ctrlEndTrans"
 
 finishTrans :: TransID -> [ValidRemVal] -> IO ()
@@ -446,7 +446,7 @@ electNewTransCoordinator transId@(env, _) transEnvs remCont = do
   let upEnvs = P.filter (/= env) transEnvs
   case minimum upEnvs of
     newC | newC == gMyEnv -> contTransWNewCoord transId remCont upEnvs
-         | otherwise -> remPutMsg newC 
+         | otherwise -> remPutMsg newC
                                   (RemElectedNewCoord transId remCont upEnvs)
   `CE.catch` -- newCoordinator unavailable itself (SomeDistTVarException)
   \ex -> let eEnv = (/= distTVarExEnv ex)
@@ -510,18 +510,18 @@ handleMsg h msg =
       mapM_ resumeFromId retryVarIds >> aStat RES
     RemAddEnvToAction tVarId env ->
       addEnvToTVarActions tVarId env >> aStat AEA
-    RemDelEnvFromAction tVarId env -> 
+    RemDelEnvFromAction tVarId env ->
       delEnvFromTVarActions tVarId env >> aStat DEA
-    RemLifeCheck -> 
+    RemLifeCheck ->
       debugStrLn2 ("RemLifeCheck: I'm alive") >> aStat LFC
     RemReadTVar tId destEnv -> -- async
       readTVarFromId tId destEnv (hPutStrLn h) >> aStat RDT
     RemStartTrans transId idVRVars transEnvs -> -- async
       startRemTrans transId idVRVars transEnvs (hPutStrLn h . show)
       >> aStat STT
-    RemContTrans transId remCont -> 
+    RemContTrans transId remCont ->
       contRemTrans transId remCont >> aStat CTT
-    RemElectedNewCoord transId remCont oprtlEnvs -> 
+    RemElectedNewCoord transId remCont oprtlEnvs ->
       contTransWNewCoord transId remCont oprtlEnvs >> aStat ENC
 
 --------------------
@@ -550,7 +550,7 @@ gMegaMuSec = 1000000
 
 
 updateAutoTrans ::  (Int -> Int) -> TransID -> IO ()
-updateAutoTrans f (env, _) = do 
+updateAutoTrans f (env, _) = do
   links <- takeMVar gLinks
   case Data.List.partition ((== env).fst) links of
     ([], otherLinks) -> do -- no link to env yet
@@ -576,7 +576,7 @@ insertRetryLinks env idVRs = do -- env mapped over other processes in trans
   where retrylink l = foldr insertRetryLink l idVRs
 
 insertRetryLink :: ValidRemVal -> AutoLink -> AutoLink
-insertRetryLink (_, (Just (_, rVar), _)) link@AutoLink{autoRetry=rVars} = 
+insertRetryLink (_, (Just (_, rVar), _)) link@AutoLink{autoRetry=rVars} =
                 -- duplicate retryVars in different TVars in same env possible
                          link{autoRetry=rVar:rVars}
 insertRetryLink _ link = link
@@ -592,7 +592,7 @@ deleteRetryLinks env idVRs = do -- env mapped over other processes in trans
     _ -> putMVar gLinks links -- internal error
 
 deleteRetryLink :: ValidRemVal -> AutoLink -> AutoLink
-deleteRetryLink (_, (Just (_, rVar), _)) link@AutoLink{autoRetry=rVars} = 
+deleteRetryLink (_, (Just (_, rVar), _)) link@AutoLink{autoRetry=rVars} =
   -- filter also possible duplicate retryVars in different TVars in same env
                          link{autoRetry = P.filter (/= rVar) rVars}
 deleteRetryLink _ link = link
@@ -607,12 +607,12 @@ lifeCheck env = CE.catch (do
     Just link | autoTrans link > 0 -> do
                                       debugStrLn9 ("lifeCheck trans "++show env)
                                       ping
-                                      threadDelay (gMegaMuSec * gTransChkIntv) 
+                                      threadDelay (gMegaMuSec * gTransChkIntv)
                                       lifeCheck env
               | autoRetry link /= [] -> do
                                       debugStrLn9 ("lifeCheck retry "++show env)
                                       ping
-                                      threadDelay (gMegaMuSec * gRetryChkIntv) 
+                                      threadDelay (gMegaMuSec * gRetryChkIntv)
                                       lifeCheck env
               | otherwise -> do -- last ping
                              ping
@@ -625,7 +625,7 @@ lifeCheck env = CE.catch (do
           recoverBrokenInactiveTrans env
           deleteLink
    )
-  where 
+  where
     ping = remPutMsg env RemLifeCheck
     deleteLink = modifyMVar_ gLinks (return.P.filter ((/= env).fst))
 
@@ -658,10 +658,10 @@ coreResume (LinkRetryVar (VarLink env retVarId)) = CE.catch (
 --------------------
 
 -- |'startDist' enables inter process communication and exception handling and
--- then executes the given main function 
-startDist :: IO ()  -- ^application main function to be executed. Each main 
+-- then executes the given main function
+startDist :: IO ()  -- ^application main function to be executed. Each main
                     -- function in the distributed system has to be wrapped
-                    -- in a 'startDist' call  
+                    -- in a 'startDist' call
              -> IO ()
 startDist nodeMain = CE.catch (do
   serverPid <- startNameService -- may be removed

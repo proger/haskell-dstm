@@ -27,7 +27,7 @@ instance Num Point where
   signum (Point x y)            = Point (signum x) (signum y)
   fromInteger x                 = Point (fromInteger x) (fromInteger x)
 
-data Key = QKey 
+data Key = QKey
          | AKey | MKey | SKey
          | UpKey | DownKey | RightKey | LeftKey
          | SpaceKey
@@ -36,7 +36,7 @@ data Key = QKey
 
 point :: Int -> Int -> Point
 point x y = Point x y
-     
+
 cWallSymbol   :: Char;   cWallSymbol   = 'x'
 cFSize        :: Int;    cFSize        = 10
 cDelay        :: Int;    cDelay        = 2000000 --  2 s; 50 ms granularity
@@ -54,7 +54,7 @@ playerImage   :: String; playerImage   = "o "
 slaveImage    :: String; slaveImage    = "@ "
 bombImage     :: String; bombImage     = ". "
 blastImage    :: String; blastImage    = "X "
-esc           :: Char;   esc           = chr 27 
+esc           :: Char;   esc           = chr 27
 csi           :: Char;   csi           = chr 91
 upKey         :: Char;   upKey         = chr 65
 downKey       :: Char;   downKey       = chr 66
@@ -189,9 +189,9 @@ benchmark action mode (delayStep, file) = do
   clockTick <- getSysVar ClockTick
   hostname  <- getHostName
   (keysPressed, keysProcessed)  <- readMVar gKeyCount
-  let elapsed = toInteger (fromEnum ((elapsedTime end) - (elapsedTime start))) 
+  let elapsed = toInteger (fromEnum ((elapsedTime end) - (elapsedTime start)))
       user    = toInteger (fromEnum ((userTime end) - (userTime start)))
-      system  = toInteger (fromEnum ((systemTime end) - (systemTime start))) 
+      system  = toInteger (fromEnum ((systemTime end) - (systemTime start)))
       delay   = toInteger delayStep * clockTick * toInteger keysPressed `div` 20
       filler  = user + system + delay - elapsed
   putStrLn ("\nHost: " ++ hostname)
@@ -202,9 +202,9 @@ benchmark action mode (delayStep, file) = do
   putStrLn ("     (" ++ show clockTick ++ " ticks/sec)")
   putStr ("+ system: " ++ showJustify system 5 ++ " ticks   ")
   putStrLn ("->   user + system time: "++ ticks2Sec (user + system) clockTick)
-  putStr ("+  delay: " ++ showJustify delay 5 ++ " ticks   ")            
+  putStr ("+  delay: " ++ showJustify delay 5 ++ " ticks   ")
   putStrLn ("<-   "++show keysPressed ++ "/" ++ show keysProcessed ++ " keys read/processed")
-  putStr ("- filler: " ++ showJustify filler 5 ++ " ticks   ")            
+  putStr ("- filler: " ++ showJustify filler 5 ++ " ticks   ")
   putStrLn ("     ("++show (delayStep*50)++" ms/key stroke)")
   putStr (showLifes lostLifes)
   putStrLn ("               Mode: " ++ show mode ++ "   ")
@@ -253,10 +253,10 @@ startGame mode input bench = do
                       threadDelay cDelay
 
 initMaster :: String -> IO GameState
-initMaster server = do 
+initMaster server = do
   debugStrLn6 ("### bomberman initMaster")
   game <- initAuto
-  atomic $ do 
+  atomic $ do
     writeTVar (slaves game) [player game]
   registerTVar server (quits game) "QUITS"
   registerTVar server (field game) "FIELD"
@@ -356,11 +356,11 @@ view game = CE.catch (do
   debugStrLn6 ("### bomberman view")
   initField <- readField -- nur test
   debugStrLn6 ("### bomberman view 1")
-  newView <- atomic $ do 
+  newView <- atomic $ do
     b <- readTVar (repaint game)
     proc $ debugStrLn5 ("view 0")
     if b
-      then do 
+      then do
         writeTVar (repaint game) False
 
         f1 <- readTVar (field game)
@@ -455,7 +455,7 @@ processKeyboard game input@(delayStep, file) = CE.catch (do
     else do
          key <- if delayStep /= 0
            then do -- pause between key strokes in micros
-                threadDelay (delayStep*50000) 
+                threadDelay (delayStep*50000)
                 oldMove <- atomic (readTVar (move game))
                 let keyOk = if oldMove == Nothing then 1 else 0
                 modifyMVar_ gKeyCount (\(key, ok) -> return (key + 1, ok+keyOk))
@@ -471,7 +471,7 @@ processKeyboard game input@(delayStep, file) = CE.catch (do
            QKey     -> atomic (writeTVar (quit game) True)
                        >> debugStrLn1 ("### bomberman Key= "++show key)
                        >> processKeyboard game input
-           LeftKey  -> atomic (writeTVar (move game) (Just MoveLeft))  
+           LeftKey  -> atomic (writeTVar (move game) (Just MoveLeft))
                        >> processKeyboard game input
            RightKey -> atomic (writeTVar (move game) (Just MoveRight))
                        >> processKeyboard game input
@@ -481,8 +481,8 @@ processKeyboard game input@(delayStep, file) = CE.catch (do
                        >> processKeyboard game input
            SpaceKey -> atomic (writeTVar (move game) (Just DropBomb))
                        >> processKeyboard game input
-           DebugKey -> startGDebug >> processKeyboard game input  
-           _        -> processKeyboard game input  
+           DebugKey -> startGDebug >> processKeyboard game input
+           _        -> processKeyboard game input
   )(\(e::SomeDistTVarException) -> do
     debugStrLn1 ("processKeyboard catch "++show e)
     hClose file
@@ -541,7 +541,7 @@ getGameKey input = do
     else getGameKey input
 
 cursorKey :: Char -> Key
-cursorKey c = 
+cursorKey c =
   if (c == upKey) then UpKey
     else if (c == downKey) then DownKey
            else if (c == leftKey) then LeftKey
@@ -549,7 +549,7 @@ cursorKey c =
                          else error ("error wrong char '"++(c:"' in cursorKey"))
 
 controlKey :: Char -> Key
-controlKey c = 
+controlKey c =
   if (elem c qKeys) then QKey
     else if (c == spaceKey) then SpaceKey
            else if (elem c dKeys) then DebugKey
@@ -568,14 +568,14 @@ getInitKey = do
     else return AutonomM
 
 initMode :: Char -> IO Mode
-initMode c = 
+initMode c =
   if (elem c aKeys) then return AutonomM
    else if (elem c mKeys) then do
                                server <- getNameServer
-                               return (MasterM server) 
-       else if (elem c sKeys) then do 
+                               return (MasterM server)
+       else if (elem c sKeys) then do
                                    server <- getNameServer
-                                   return (SlaveM server) 
+                                   return (SlaveM server)
               else error ("error wrong char '"++(c:"' in initMode"))
 
 getNameServer :: IO String
@@ -610,7 +610,7 @@ playerCtrl game = CE.catch (do
                   p <- readTVar (player game)
                   blsTVars <- readTVar (blasts game)
                   allBlasts <- mapM readTVar blsTVars
-                  if elem p ((concat.concat) allBlasts) 
+                  if elem p ((concat.concat) allBlasts)
                     then retry
                     else modifyTVar (lifes game) (+1)
     _        -> atomic $ do
@@ -622,8 +622,8 @@ playerCtrl game = CE.catch (do
                                     MoveUp    -> legalPos f p pU
                                     MoveDown  -> legalPos f p pD
                                     _         -> legalPos f p pI
-                  writeTVar (player game) newPlayer 
-                  setSTMRepaintAll (repaints game) 
+                  writeTVar (player game) newPlayer
+                  setSTMRepaintAll (repaints game)
   debugStrLn6 ("# end loop")
   playerCtrl game
   )(\(e::SomeDistTVarException) -> do
@@ -634,7 +634,7 @@ playerCtrl game = CE.catch (do
     debugStrLn1 ("playerCtrl catch dyn ---: ")
     --bs <- atomic $ showSTMRepaintAll (repaints game)
     --debugStrLn1 ("reps " ++ show bs)
-    atomic $ setSTMRepaintAll (repaints game) 
+    atomic $ setSTMRepaintAll (repaints game)
     debugStrLn1 ("playerCtrl catch dyn <-: ")
     playerCtrl game
    )
@@ -644,7 +644,7 @@ getSTMCommand mTVar = do
     m <- readTVar mTVar
     proc $ debugStrLn2 ("getSTMCommand: "++(show m))
     if (m == Nothing)
-      then retry 
+      then retry
       else do
         writeTVar mTVar Nothing
         return (fromJust m)
@@ -662,7 +662,7 @@ isLegal p f = isInBounds p &&  ((f `at` p) /= Wall)
 
 isInBounds :: Point -> Bool
 isInBounds (Point x y) = x >= 0 && x < cFSize && y >= 0 && y < cFSize
-      
+
 dropBomb :: GameState -> IO ()
 dropBomb game = do
   debugStrLn6 ("### bomberman dropBomb")
@@ -684,16 +684,16 @@ timeBomb game pos = CE.catch (do -- catch bombs from dropped players
   debugStrLn6 "# wait for wake counter orelse active explosions"
   atomic $ do
       w <- readTVar wake
-      if w 
+      if w
         then return () -- timeout
         else retry -- check active explosion @ pos -> new bomb explodes also
    `orElse` do
       expls <- getSTMBombCount game -- # of active bombs
-      if expls > 0 
+      if expls > 0
         then do -- sync with other expls
              blsTVars <- readTVar (blasts game)
              allBlasts <- mapM readTVar blsTVars
-             if elem pos ((concat.concat) allBlasts) 
+             if elem pos ((concat.concat) allBlasts)
                then return () -- dont wait for timeout
                else retry -- wait for timeout
         else retry -- wait for timeout
@@ -737,7 +737,7 @@ canvasEl :: View -> Point -> Element
 canvasEl (View vField vPlayer vSlaves vBombs vBlasts) p =
   if elem p (concat vBlasts)
     then Blast
-    else if (vPlayer == p) 
+    else if (vPlayer == p)
            then Player
            else if elem p vSlaves
                   then Slave
@@ -748,12 +748,12 @@ canvasEl (View vField vPlayer vSlaves vBombs vBlasts) p =
 updateField :: Element -> [Point] -> Field -> Field
 updateField el ps fd =
   [ [ f x y | x <- [0..cFSize-1] ] | y <- [0..cFSize-1] ]
-    where f x y = if (elem (Point x y) ps) 
+    where f x y = if (elem (Point x y) ps)
                     then el else fd `at` (Point x y)
 {-  [bVec | y <- [0..cFSize-1],
            let bVec = [bEl | x <- [0..cFSize-1],
-                             let bEl = if (elem (Point x y) ps) 
-                                         then el 
+                             let bEl = if (elem (Point x y) ps)
+                                         then el
                                          else fd `at` (Point x y)]]
 -}
 
@@ -797,7 +797,7 @@ showSTMRepaintAll allRepaints = do
   return bs
 
 showGameState :: GameState -> IO ()
-showGameState g = atomic $ do 
+showGameState g = atomic $ do
   mv <- readTVar (move g)
   proc $ debugStrLn6 ("TVar move= "++show (move g)++" move= "++show mv)
   rp <- readTVar (repaint g)
