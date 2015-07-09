@@ -3,7 +3,7 @@ module Main where
 import Control.Distributed.STM.DebugDSTM
 import Control.Distributed.STM.DSTM
 import Prelude hiding (catch)
-import System hiding (system)
+import System.Environment (getArgs)
 import System.IO hiding (hPutStrLn)
 
 type Stick = TVar Bool

@@ -18,7 +18,7 @@ import Control.Distributed.STM.Utils
 import Network
 import Network.BSD
 import Network.Socket
-import Maybe
+import Data.Maybe
 import Prelude as P hiding (catch, putStr, putStrLn)
 import System.IO
 import System.IO.Unsafe
@@ -68,29 +68,27 @@ freshPort p = catch (do
 
 type IPAddr  = String
 
-data EnvAddr = EnvAddr PortID IPAddr
+data EnvAddr = EnvAddr Port IPAddr
   deriving (Show, Read, Eq, Ord)
 
 data VarLink = VarLink EnvAddr -- host TVar node
                        VarID   -- TVar Id on host TVar node
   deriving (Eq, Show, Read)
 
-instance Show PortID where
- show (PortNumber p) = show p
- show _      = "Show PortID: otherPort" -- internal error
+newtype Port = Port PortID deriving (Eq)
 
-instance Read PortID where
+instance Show Port where
+ show (Port (PortNumber p)) = show p
+ show _      = "Show Port: otherPort" -- internal error
+
+instance Read Port where
  readsPrec _ str0 =
      case reads str0 of
-       ((p,str2):_) -> [(PortNumber (fromInteger p),str2)]
-       o -> error ("error readsPrec PortID" ++ show o)
+       ((p,str2):_) -> [(Port (PortNumber (fromInteger p)),str2)]
+       o -> error ("error readsPrec Port" ++ show o)
 
-instance Eq PortID where
- (PortNumber p1)==(PortNumber p2) = p1==p2
- _ == _ = False -- error
-
-instance Ord PortID where
- (PortNumber p1)<=(PortNumber p2) = p1<=p2
+instance Ord Port where
+ (Port (PortNumber p1)) <= (Port (PortNumber p2)) = p1<=p2
  _ <= _ = False -- error
 
 gMyIpAddr :: IPAddr
@@ -100,19 +98,19 @@ gMyIpAddr = unsafePerformIO $ do
   hEntry <- getHostByName hName
   inet_ntoa (hostAddress hEntry)
 
-gMyPort :: PortID
+gMyPort :: Port
 {-# NOINLINE gMyPort #-}
 gMySocket :: Socket
 {-# NOINLINE gMySocket #-}
 (gMyPort,gMySocket) = unsafePerformIO $ do
   (port,sock) <- freshPort gServerPort
-  return (port,sock)
+  return (Port port,sock)
 
 gMyEnv :: EnvAddr -- initialize environment
 gMyEnv = (EnvAddr $! gMyPort) $! gMyIpAddr
 
 nameServerEnv :: String -> EnvAddr
-nameServerEnv = EnvAddr (PortNumber gNameServerPort)
+nameServerEnv = EnvAddr (Port (PortNumber gNameServerPort))
 
 -----------------
 -- Post Office --
@@ -211,7 +209,7 @@ allocTcpHandle env = catch (do
   )(propagateEx "allocTcpHandle")
 
 connectToEnv' :: EnvAddr -> IO Handle
-connectToEnv' env@(EnvAddr pid ip) = catch (do 
+connectToEnv' env@(EnvAddr (Port pid) ip) = catch (do
   h <- connectTo ip pid
   hSetBuffering h LineBuffering
   return h

@@ -2,16 +2,16 @@
 
 module Main where
 
-import Char
+import Data.Char
 import Control.Concurrent
 import Control.Exception as CE hiding (catch)
 import qualified Control.Exception as CE (catch)
 import Control.Distributed.STM.DebugDSTM
 import Control.Distributed.STM.DSTM
-import Maybe
+import Data.Maybe
 import Network.BSD
 import Prelude hiding (catch)
-import System hiding (system)
+import System.Environment (getArgs)
 import System.IO hiding (hPutStrLn)
 import System.IO.Unsafe
 import System.Posix
